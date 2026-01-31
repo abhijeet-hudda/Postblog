@@ -1,10 +1,14 @@
-import React, {useEffect, useState} from 'react'
+import React, {use, useEffect, useState} from 'react'
 import appwriteService from "../appwrite/config";
 import {Container, PostCard} from '../components'
+import { useSelector } from 'react-redux';
 
 function Home() {
     const [posts, setPosts] = useState([])
-
+    const authStatus = useSelector((state)=>state.auth.status)
+    const userData = useSelector((state)=>state.auth.userData)
+    //console.log("userdata",userData)
+    //console.log("authstatus",authStatus)
     useEffect(() => {
         appwriteService.getPosts().then((posts) => {
             if (posts) {
@@ -13,7 +17,7 @@ function Home() {
         })
     }, [])
   
-    if (posts.length === 0) {
+    if (!authStatus) {
         return (
             <div className="w-full py-8 mt-4 text-center">
                 <Container>
@@ -28,19 +32,21 @@ function Home() {
             </div>
         )
     }
-    return (
-        <div className='w-full py-8'>
-            <Container>
-                <div className='flex flex-wrap'>
-                    {posts.map((post) => (
-                        <div key={post.$id} className='p-2 w-1/4'>
-                            <PostCard {...post} />
-                        </div>
-                    ))}
-                </div>
-            </Container>
-        </div>
-    )
+    else {
+        return (
+            <div className='w-full py-8'>
+                <Container>
+                    <div className='flex flex-wrap'>
+                        {posts.map((post) => (
+                            <div key={post.$id} className='p-2 w-1/4'>
+                                <PostCard {...post} />
+                            </div>
+                        ))}
+                    </div>
+                </Container>
+            </div>
+        )
+    }
 }
 
 export default Home

@@ -1,4 +1,4 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useState ,useEffect} from "react";
 import { useForm } from "react-hook-form";
 import { Button, Input, RTE, Select } from "..";
 import appwriteService from "../../appwrite/config";
@@ -18,7 +18,7 @@ export default function PostForm({ post }) {
 
   const navigate = useNavigate();
   const userData = useSelector((state) => state.auth.userData);
-
+  const [preview,setPreview] = useState("")
   const submit = async (data) => {
     if(post) {
       const file = data.image[0]
@@ -31,15 +31,15 @@ export default function PostForm({ post }) {
 
       const dbPost = await appwriteService.updatePost(post.$id, {
         ...data,
-        featuredImage: file ? file.$id : undefined,
+        featuredImage: file ? file.$id : post.featuredImage,
       });
 
       if (dbPost) {
         navigate(`/post/${dbPost.$id}`);
       }
-    } else {
+    } 
+    else {
       const file = await appwriteService.uploadFile(data.image[0]);
-
       if (file) {
         const fileId = file.$id;
         data.featuredImage = fileId;
@@ -75,6 +75,25 @@ export default function PostForm({ post }) {
 
     return () => subscription.unsubscribe();
   }, [watch, slugTransform, setValue]);
+  
+  useEffect(() => {
+    if (post?.featuredImage) {
+      setPreview(appwriteService.getFilePreview(post.featuredImage));
+    }
+  }, [post]);
+
+  // 🔹 Live preview for new image
+  const imageFile = watch("image");
+
+  useEffect(() => {
+    if (imageFile && imageFile.length > 0) {
+      const file = imageFile[0];
+      const objectUrl = URL.createObjectURL(file);
+      setPreview(objectUrl);
+      return () => URL.revokeObjectURL(objectUrl);
+    }
+  }, [imageFile]);
+
 
   return (
     <form onSubmit={handleSubmit(submit)} className="flex flex-wrap">
@@ -107,14 +126,19 @@ export default function PostForm({ post }) {
         <Input
           label="Featured Image :"
           type="file"
-          className="mb-4"
+           className="block w-full text-sm text-slate-500
+                        file:mr-4 file:py-2 file:px-4
+                        file:rounded-full file:border-0
+                        file:text-sm file:font-semibold
+                        file:bg-violet-50 file:text-violet-700
+                        hover:file:bg-violet-100 cursor-pointer"
           accept="image/png, image/jpg, image/jpeg, image/gif"
           {...register("image", { required: !post })}
         />
         {post && (
           <div className="w-full mb-4">
             <img
-              src={appwriteService.getFilePreview(post.featuredImage)}
+              src={preview}
               alt={post.title}
               className="rounded-lg"
             />
